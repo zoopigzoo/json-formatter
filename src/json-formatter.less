@@ -11,7 +11,8 @@
   @toggler-color: #45376F,
   @bracket-color: blue,
   @key-color: #00008B,
-  @url-color: blue ){
+  @url-color: blue,
+  @tag-bgcolor: blue ){
 
   font-family: monospace;
   &, a, a:hover {
@@ -38,26 +39,63 @@
     white-space: pre;
     word-wrap: break-word;
   }
+  .string .constructor-name { margin-left: 10px; }
   .number { color: @number-color; }
+  .number .constructor-name { margin-left: 10px; }
   .boolean { color: @boolean-color; }
+  .boolean .constructor-name { margin-left: 10px; }
   .null { color: @null-color; }
+  .null .constructor-name { margin-left: 10px; }
   .undefined { color: @undefined-color; }
   .function { color: @function-color; }
   .date { background-color: fade(@default-color, 5%); }
+  .date .constructor-name { margin-left: 10px; }
   .url {
     text-decoration: underline;
     color: @url-color;
     cursor: pointer;
   }
+  .url .constructor-name { margin-left: 10px; }
 
   .bracket { color: @bracket-color; }
   .key {
     color: @key-color;
     cursor: pointer;
   }
+  
   .constructor-name {
     cursor: pointer;
   }
+
+  .spe {
+    background-color: @tag-bgcolor;
+    color: white;  
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+
+  .key-highlight {
+    border: 2px solid red;  
+  }
+
+  .spe-highlight {
+      animation: colorchange 1s infinite; 
+      -webkit-animation: colorchange 1s infinite;
+  }
+
+  @keyframes colorchange
+    {
+      0%   {background: red;}
+      50%  {background: blue;}
+      100% {background: red;}
+    }
+
+    @-webkit-keyframes colorchange 
+    {
+      0%   {background: red;}
+      50%  {background: blue;}
+      100% {background: red;}
+    }
 
   .toggler {
     font-size: 0.8em;
@@ -87,7 +125,6 @@
     opacity: 0.6;
   }
 }
-
 
 .json-formatter-row {
   .theme();

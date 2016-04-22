@@ -44,9 +44,8 @@ gulp.task('html', function () {
 });
 
 gulp.task('watch', function () {
-  gulp.watch(['./demo/**/*.html'], ['html']);
   gulp.watch(['./**/*.less'], ['styles']);
-  gulp.watch(['./**/*.js', './**/*.html'], ['scripts']);
+  gulp.watch(['./**/*.js'], ['scripts']);
 });
 
 gulp.task('clean', function(cb) {
@@ -145,7 +144,9 @@ function handleError(err) {
 gulp.task('build', function(cb) {
   runSequence('clean', 'scripts', 'styles', cb);
 });
+
 gulp.task('serve', ['build', 'connect', 'watch', 'open']);
 gulp.task('default', ['build', 'test']);
+gulp.task('watchbuild', ['watch', 'clean', 'scripts', 'styles']);
 gulp.task('test', ['build', 'jshint-test', 'karma']);
 gulp.task('serve-test', ['build', 'watch', 'jshint-test', 'karma-serve']);

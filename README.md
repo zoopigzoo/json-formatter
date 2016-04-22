@@ -1,4 +1,10 @@
 # JSON Formatter
+
+Fork Message:
+1. Return JSON path when clicking
+2. Add support for highlight with tags & json path
+3. Still in development...
+
 [![Build Status](https://travis-ci.org/mohsen1/json-formatter.svg?branch=master)](https://travis-ci.org/mohsen1/json-formatter)
 [![Code Climate](https://codeclimate.com/github/mohsen1/json-formatter/badges/gpa.svg)](https://codeclimate.com/github/mohsen1/json-formatter)
 

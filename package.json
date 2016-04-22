@@ -50,5 +50,8 @@
   "readmeFilename": "README.md",
   "_id": "angular-directive-boilerplate@0.0.6",
   "_shasum": "a6be9010ce530141463d331a83ccaf2858e27b92",
-  "_from": "angular-directive-boilerplate@0.0.6"
+  "_from": "angular-directive-boilerplate@0.0.6",
+  "dependencies": {
+    "underscore": "^1.8.3"
+  }
 }

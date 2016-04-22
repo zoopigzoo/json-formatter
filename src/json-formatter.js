@@ -1,13 +1,32 @@
 'use strict';
 
 angular.module('jsonFormatter', ['RecursionHelper'])
+.factory('JSONPath2Regex', function() {
+  return {
+    turn: function(jsonpath) {
+      jsonpath = jsonpath.replace(/^\$\./img, "\\$.");
+      jsonpath = jsonpath.replace(/\./img, "\\.");
+      jsonpath = jsonpath.replace(/\[/img, "\\[");
+      jsonpath = jsonpath.replace(/\]/img, "\\]");
 
+      jsonpath = jsonpath.replace(/\.\*(\\\.|\\\[|$)/img, ".[^\\.]+$1");
+      jsonpath = jsonpath.replace(/\\\[\*\\\]/img, "\\[\\d+\\]");
+      jsonpath = '^' + jsonpath + '$';
+
+      return new RegExp(jsonpath, 'im');
+    }
+  };
+})
 .provider('JSONFormatterConfig', function JSONFormatterConfigProvider() {
 
   // Default values for hover preview config
   var hoverPreviewEnabled = false;
   var hoverPreviewArrayCount = 100;
   var hoverPreviewFieldCount = 5;
+  var highlightJsonPath = '';
+  var highlightTagName = '';  
+  var jsonPathToObjectDictionary = [];
+  var tagClickCallback = function(path) {};
 
   return {
     get hoverPreviewEnabled() {
@@ -31,23 +50,87 @@ angular.module('jsonFormatter', ['RecursionHelper'])
       hoverPreviewFieldCount = parseInt(value, 10);
     },
 
+    get highlightJsonPath() {
+      return highlightJsonPath;
+    },
+    set highlightJsonPath(value) {
+      return highlightJsonPath;
+    },
+
+    get highlightTagName() {
+      return highlightTagName;
+    },
+    set highlightTagName(value) {
+      return highlightTagName;
+    },
+
+    get jsonPathToObjectDictionary() {
+      return jsonPathToObjectDictionary;
+    },
+    set jsonPathToObjectDictionary(value) {
+      jsonPathToObjectDictionary = value;
+    },
+
+    get tagClickCallback() {
+      return tagClickCallback;
+    },
+    set tagClickCallback(value) {
+      tagClickCallback = value;
+    },
+
     $get: function () {
       return {
         hoverPreviewEnabled: hoverPreviewEnabled,
         hoverPreviewArrayCount: hoverPreviewArrayCount,
-        hoverPreviewFieldCount: hoverPreviewFieldCount
+        hoverPreviewFieldCount: hoverPreviewFieldCount,
+        highlightJsonPath: highlightJsonPath,
+        highlightTagName: highlightTagName,
+        jsonPathToObjectDictionary: jsonPathToObjectDictionary,
+        tagClickCallback: tagClickCallback,
       };
     }
   };
 })
-
 .directive('jsonFormatter', ['RecursionHelper', 'JSONFormatterConfig', function jsonFormatterDirective(RecursionHelper, JSONFormatterConfig) {
   function escapeString(str) {
     return str.replace('"', '\"');
   }
 
+  function isASpecialObject(object, path) {
+    return getObjectNameFromConfig(object, path) !== '';
+  }
+
+  function getObjectNameFromConfig(object, path) {
+    if(JSONFormatterConfig.jsonPathToObjectDictionary
+      && JSONFormatterConfig.jsonPathToObjectDictionary.length > 0) {
+      
+      // console.log("path: " + path);
+
+      for(var i=0;i<JSONFormatterConfig.jsonPathToObjectDictionary.length;i++) {
+        var r = JSONFormatterConfig.jsonPathToObjectDictionary[i].regex;
+        // console.log("regex: " + r);
+
+        if(r.test(path)) {
+          // console.log("pass");
+          return JSONFormatterConfig.jsonPathToObjectDictionary[i].object;
+        } else {
+          // console.log("bad");
+        }
+      }
+    }
+
+    return '';
+  }
+
   // From http://stackoverflow.com/a/332429
-  function getObjectName(object) {
+  function getObjectName(object, path) {
+    if(path !== '') {
+      var res = getObjectNameFromConfig(object, path);
+      if(res !== '') {
+        return res;
+      }
+    }
+
     if (object === undefined) {
       return '';
     }
@@ -93,7 +176,7 @@ angular.module('jsonFormatter', ['RecursionHelper'])
   function getPreview(object) {
     var value = '';
     if (angular.isObject(object)) {
-      value = getObjectName(object);
+      value = getObjectName(object, '');
       if (angular.isArray(object))
         value += '[' + object.length + ']';
     } else {
@@ -119,10 +202,29 @@ angular.module('jsonFormatter', ['RecursionHelper'])
         });
       }
     };
+
+    scope.isKeyHighlight = function() {
+      if(JSONFormatterConfig.highlightJsonPath 
+        && JSONFormatterConfig.highlightJsonPath === scope.currentpath()) {
+        return true;
+      } else {
+        return false;
+      }
+    };
+
+    scope.isTagHighlight = function() {
+      if(JSONFormatterConfig.highlightTagName 
+        && JSONFormatterConfig.highlightTagName === scope.getConstructorName()) {
+        return true;
+      } else {
+        return false;
+      }
+    };    
+
     scope.type = getType(scope.json);
     scope.hasKey = typeof scope.key !== 'undefined';
     scope.getConstructorName = function(){
-      return getObjectName(scope.json);
+      return getObjectName(scope.json, scope.currentpath());
     };
 
     if (scope.type === 'string'){
@@ -143,12 +245,45 @@ angular.module('jsonFormatter', ['RecursionHelper'])
         scope.isOpen && !scope.isArray();
     };
 
+    scope.jsonpath = function() {
+      if(!scope.parentkey && !scope.key) {
+        return '$';
+      }
+
+      if(scope.parentisarray === 'true') {
+        return (scope.parentkey + "[" + scope.key + "]").trim();
+      } else {
+        return (scope.parentkey + "." + scope.key).trim();
+      }
+    };
+
+    scope.currentpath = function() {
+      if(scope.parentisarray === 'true') {
+        return (scope.parentkey + "[" + scope.key + "]").trim();
+      } else {
+        return (scope.parentkey + "." + scope.key).trim();
+      }
+    };
+
+    scope.isSpecialTag = function() {
+      return isASpecialObject(scope.json, scope.currentpath());
+    }; 
 
     // If 'open' attribute is present
     scope.isOpen = !!scope.open;
     scope.toggleOpen = function () {
-      scope.isOpen = !scope.isOpen;
+      // scope.isOpen = !scope.isOpen;
+      // handleclick(scope.currentpath());
+
+      // console.log(scope.currentpath());
+      // console.log(scope.isSpecialTag());
+      // console.log(scope.getConstructorName());
+
+      if(JSONFormatterConfig.tagClickCallback) {
+        JSONFormatterConfig.tagClickCallback(scope.currentpath());
+      }
     };
+
     scope.childrenOpen = function () {
       if (scope.open > 1){
         return scope.open - 1;
@@ -205,7 +340,9 @@ angular.module('jsonFormatter', ['RecursionHelper'])
     scope: {
       json: '=',
       key: '=',
-      open: '='
+      open: '=',
+      parentkey: '@pkey',
+      parentisarray: '@pisarray'
     },
     compile: function(element) {
 
